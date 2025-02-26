@@ -3,39 +3,6 @@ name: DevSecOps Security Scan
 on: [push, pull_request]
 
 jobs:
-  # -----------------------------
-  # 1) MINIMAL SCOUT DEBUG
-  # -----------------------------
-  scoutsuite-debug:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Python (Minimal Debug)
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install & Test ScoutSuite (Debug Only)
-        run: |
-          set -euxo pipefail
-
-          echo "=== Create and activate venv ==="
-          python -m venv venv
-          source venv/bin/activate
-
-          echo "=== Upgrade pip & install ScoutSuite ==="
-          pip install --upgrade pip
-          pip install scoutsuite
-
-          echo "=== Confirm version & help ==="
-          # Use the CLI command 'scout' since the entry point is named that way
-          scout --version
-          scout --help
-
-          echo "=== Minimal ScoutSuite debug done ==="
-
   # --------------------------------------
   # 2) FULL DEVSECOPS SECURITY PIPELINE
   # --------------------------------------
@@ -98,15 +65,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # Create & activate a separate venv for ScoutSuite
+          # Create & activate a separate virtual environment for ScoutSuite
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install scoutsuite
 
           mkdir -p scoutsuite-report
-          # Run ScoutSuite using the CLI command "scout"
-          scout -p aws --report-dir scoutsuite-report
+          # Run ScoutSuite using the correct CLI: the provider (aws) is a positional argument
+          scout aws --report-dir scoutsuite-report
 
       # 8) Upload security reports as artifacts
       - name: Upload Security Reports as Artifacts
