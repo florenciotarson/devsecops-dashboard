@@ -13,7 +13,9 @@ jobs:
 
       - name: Run Semgrep (Static Code Analysis)
         run: |
+          # Install Semgrep (no pinned version typically needed)
           pip install semgrep
+          # Run SAST
           semgrep scan --config=auto
 
       - name: Run Trivy (Dependency Scan)
@@ -27,11 +29,15 @@ jobs:
         run: |
           # Ensure infra folder exists so Checkov doesn't complain
           mkdir -p infra
-          pip install checkov
+          # Pin packaging and jmespath to satisfy checkov@3.2.377 dependencies
+          pip install 'packaging>=23.0,<24.0' 'jmespath>=1.0.0,<2.0.0'
+          # Now install Checkov
+          pip install checkov==3.2.377
           checkov -d infra/
 
       - name: Run Prowler (AWS Security Audit)
-        continue-on-error: true  # Continue if failing checks (exit code 3) occur
+        # Prowler exits code 3 if it finds failing checks. We allow the pipeline to continue.
+        continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -59,14 +65,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # METHOD 3: Use a virtual environment for ScoutSuite
+          # Create a virtual environment for ScoutSuite
           python -m venv venv
           source venv/bin/activate
 
-          # Install ScoutSuite into the venv
+          # Now install ScoutSuite inside this venv
           pip install scoutsuite
 
-          # Now the 'scoutsuite' command is available in this venv
+          # Run ScoutSuite from the venv
           scoutsuite -p aws --report scoutsuite-report
 
       - name: Upload Security Reports as Artifacts
