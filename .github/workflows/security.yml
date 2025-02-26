@@ -50,8 +50,8 @@ jobs:
           # Install all dependencies
           poetry install
 
-          # Run prowler with Poetry
-          poetry run python prowler.py -M json -o prowler-report.json
+          # Run prowler with Poetry, using json-ocsf output instead of 'json'
+          poetry run python prowler.py -M json-ocsf -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
         env:
