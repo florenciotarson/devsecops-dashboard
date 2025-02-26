@@ -1,122 +1,42 @@
-name: DevSecOps Security Scan
+name: Debug ScoutSuite
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
-  # -----------------------------
-  # 1) MINIMAL SCOUTSUITE DEBUG
-  # -----------------------------
   scoutsuite-debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Python (Minimal Debug)
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-
-      - name: Install & Test ScoutSuite (Debug Only)
+      - name: ScoutSuite debug
         run: |
           set -euxo pipefail
 
-          echo "=== Create and activate venv ==="
+          echo "=== System Python info ==="
+          python --version
+          which python
+
+          echo "=== Create venv ==="
           python -m venv venv
+
+          echo "=== Check venv/bin ==="
+          ls -al venv/bin
+
+          echo "=== Activate venv ==="
           source venv/bin/activate
 
-          echo "=== Upgrade pip & install ScoutSuite ==="
-          pip install --upgrade pip
-          pip install scoutsuite
+          echo "=== Python in venv ==="
+          which python
+          python --version
 
-          echo "=== Confirm version & help ==="
-          # Use Python module invocation (doesn't rely on a bin/scoutsuite file)
+          echo "=== Upgrade pip ==="
+          python -m pip install --upgrade pip
+
+          echo "=== Install ScoutSuite ==="
+          python -m pip install scoutsuite
+
+          echo "=== Check installed packages ==="
+          python -m pip list | grep -i scout || true
+          python -m pip show scoutsuite || true
+
+          echo "=== Attempting to run ScoutSuite ==="
           python -m scoutsuite --version
           python -m scoutsuite --help
-
-          echo "=== Minimal ScoutSuite debug done ==="
-
-
-  # --------------------------------------
-  # 2) FULL DEVSECOPS SECURITY PIPELINE
-  # --------------------------------------
-  security:
-    name: Run Security Scans
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # 1) Pin Python version
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-
-      # 2) Install Dependencies
-      - name: Install Dependencies
-        run: |
-          pip install semgrep checkov scoutsuite
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ./bin
-
-      # 3) Run Semgrep (Static Code Analysis)
-      - name: Run Semgrep (Static Code Analysis)
-        continue-on-error: true
-        run: |
-          semgrep scan --config=auto --json -o semgrep-results.json
-
-      # 4) Run Trivy (Dependency Scan)
-      - name: Run Trivy (Dependency Scan)
-        continue-on-error: true
-        run: |
-          ./bin/trivy fs . --format json --output trivy-results.json
-
-      # 5) Run Checkov (Terraform Security Scan)
-      - name: Run Checkov (Terraform Security Scan)
-        continue-on-error: true
-        run: |
-          mkdir -p infra
-          checkov -d infra/ --output json --output-file-path checkov-results.json
-
-      # 6) Run Prowler (AWS Security Audit)
-      - name: Run Prowler (AWS Security Audit)
-        continue-on-error: true
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          rm -rf prowler-repo
-          git clone https://github.com/prowler-cloud/prowler.git prowler-repo
-          cd prowler-repo
-          pip install poetry
-          poetry install --no-root
-          poetry run python prowler.py -M json-ocsf -o prowler-report.json
-
-      # 7) Run ScoutSuite (AWS Security Report)
-      - name: Run ScoutSuite (AWS Security Report)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          # Create & activate a separate venv in this step
-          python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install scoutsuite
-
-          mkdir -p scoutsuite-report
-          # Invoke ScoutSuite via Python module
-          python -m scoutsuite -p aws --report-dir scoutsuite-report
-
-      # 8) Upload security reports
-      - name: Upload Security Reports as Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: |
-            semgrep-results.json
-            trivy-results.json
-            checkov-results.json
-            prowler-repo/prowler-report.json
-            scoutsuite-report/
