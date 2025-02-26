@@ -31,7 +31,7 @@ jobs:
           checkov -d infra/
 
       - name: Run Prowler (AWS Security Audit)
-        continue-on-error: true  # <--- Step 2: Continue even if Prowler fails
+        continue-on-error: true  # Continue if failing checks (exit code 3) occur
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -51,7 +51,7 @@ jobs:
           # Install all dependencies
           poetry install
 
-          # Run prowler with Poetry, using json-ocsf output instead of 'json'
+          # Run prowler with Poetry (json-ocsf output)
           poetry run python prowler.py -M json-ocsf -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
@@ -59,7 +59,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          # METHOD 3: Use a virtual environment for ScoutSuite
+          python -m venv venv
+          source venv/bin/activate
+
+          # Install ScoutSuite into the venv
           pip install scoutsuite
+
+          # Now the 'scoutsuite' command is available in this venv
           scoutsuite -p aws --report scoutsuite-report
 
       - name: Upload Security Reports as Artifacts
