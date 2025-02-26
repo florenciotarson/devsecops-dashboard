@@ -25,7 +25,7 @@ jobs:
 
       - name: Run Checkov (Terraform Security Scan)
         run: |
-          # Ensure infra folder exists to avoid error
+          # Ensure infra folder exists so Checkov doesn't complain
           mkdir -p infra
           pip install checkov
           checkov -d infra/
@@ -35,15 +35,31 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # Remove any leftover folder from previous runs
+          # Remove any leftover folder
           rm -rf prowler-repo
-          # Clone the Prowler repo into "prowler-repo"
+          # Clone fresh
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
-          # Make the prowler script executable
-          chmod +x prowler
-          # Run the prowler script using Bash
-          bash ./prowler -M json -o prowler-report.json
+          
+          # List files for debugging
+          echo "=== Debugging: Contents of prowler-repo ==="
+          ls -al
+          
+          # If there's a script named 'prowler' in this folder, rename it
+          # to avoid conflict with any directory also named 'prowler'.
+          if [ -f prowler ]; then
+            echo "Found prowler script."
+            mv prowler prowler_script
+            chmod +x prowler_script
+            echo "=== Debugging: After renaming prowler to prowler_script ==="
+            ls -al
+            # Run prowler with a new name
+            bash ./prowler_script -M json -o prowler-report.json
+          else
+            echo "ERROR: Did not find a prowler script file. Listing files again:"
+            ls -al
+            exit 1
+          fi
 
       - name: Run ScoutSuite (AWS Security Report)
         env:
