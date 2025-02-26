@@ -25,6 +25,8 @@ jobs:
 
       - name: Run Checkov (Terraform Security Scan)
         run: |
+          # Ensure infra folder exists to avoid error
+          mkdir -p infra
           pip install checkov
           checkov -d infra/
 
