@@ -33,8 +33,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          # Remove any leftover prowler folder
+          rm -rf prowler
+          # Clone fresh
           git clone https://github.com/prowler-cloud/prowler.git
           cd prowler
+          # Make prowler script executable
+          chmod +x prowler
+          # Run prowler
           ./prowler -M json -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
