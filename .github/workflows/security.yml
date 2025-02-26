@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   # -----------------------------
-  # 1) MINIMAL SCOUTSUITE DEBUG
+  # 1) MINIMAL SCOUT DEBUG
   # -----------------------------
   scoutsuite-debug:
     runs-on: ubuntu-latest
@@ -30,8 +30,9 @@ jobs:
           pip install scoutsuite
 
           echo "=== Confirm version & help ==="
-          python -m scoutsuite --version
-          python -m scoutsuite --help
+          # Use the CLI command 'scout' since the entry point is named that way
+          scout --version
+          scout --help
 
           echo "=== Minimal ScoutSuite debug done ==="
 
@@ -104,8 +105,8 @@ jobs:
           pip install scoutsuite
 
           mkdir -p scoutsuite-report
-          # Run ScoutSuite using the Python module command
-          python -m scoutsuite -p aws --report-dir scoutsuite-report
+          # Run ScoutSuite using the CLI command "scout"
+          scout -p aws --report-dir scoutsuite-report
 
       # 8) Upload security reports as artifacts
       - name: Upload Security Reports as Artifacts
