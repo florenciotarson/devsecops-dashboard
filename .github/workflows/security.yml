@@ -35,13 +35,13 @@ jobs:
         run: |
           # Remove any leftover folder from previous runs
           rm -rf prowler-repo
-          # Clone the Prowler repo into "prowler-repo" (avoid naming it "prowler")
+          # Clone the Prowler repo into "prowler-repo"
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
           # Make the prowler script executable
           chmod +x prowler
-          # Run the prowler script
-          ./prowler -M json -o prowler-report.json
+          # Run the prowler script using Bash
+          bash ./prowler -M json -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
         env:
