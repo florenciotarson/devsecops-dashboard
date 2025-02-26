@@ -41,25 +41,14 @@ jobs:
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
           
-          # List files for debugging
-          echo "=== Debugging: Contents of prowler-repo ==="
+          echo "=== Debug: Prowler Repo Contents ==="
           ls -al
-          
-          # If there's a script named 'prowler' in this folder, rename it
-          # to avoid conflict with any directory also named 'prowler'.
-          if [ -f prowler ]; then
-            echo "Found prowler script."
-            mv prowler prowler_script
-            chmod +x prowler_script
-            echo "=== Debugging: After renaming prowler to prowler_script ==="
-            ls -al
-            # Run prowler with a new name
-            bash ./prowler_script -M json -o prowler-report.json
-          else
-            echo "ERROR: Did not find a prowler script file. Listing files again:"
-            ls -al
-            exit 1
-          fi
+
+          # Make prowler.py executable
+          chmod +x prowler.py
+
+          # Run prowler.py via Python to generate prowler-report.json
+          python prowler.py -M json -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
         env:
