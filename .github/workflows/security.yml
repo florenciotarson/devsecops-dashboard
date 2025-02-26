@@ -13,7 +13,7 @@ jobs:
 
       - name: Run Semgrep (Static Code Analysis)
         run: |
-          curl -fsSL https://semgrep.dev/install.sh | sh
+          pip install semgrep
           semgrep scan --config=auto
 
       - name: Run Trivy (Dependency Scan)
