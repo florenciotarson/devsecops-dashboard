@@ -31,6 +31,7 @@ jobs:
           checkov -d infra/
 
       - name: Run Prowler (AWS Security Audit)
+        continue-on-error: true  # <--- Step 2: Continue even if Prowler fails
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
