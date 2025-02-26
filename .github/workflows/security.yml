@@ -3,6 +3,41 @@ name: DevSecOps Security Scan
 on: [push, pull_request]
 
 jobs:
+  # -----------------------------
+  # 1) MINIMAL SCOUTSUITE DEBUG
+  # -----------------------------
+  scoutsuite-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python (Minimal Debug)
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install & Test ScoutSuite (Debug Only)
+        run: |
+          set -euxo pipefail
+
+          echo "=== Create and activate venv ==="
+          python -m venv venv
+          source venv/bin/activate
+
+          echo "=== Upgrade pip & install ScoutSuite ==="
+          pip install --upgrade pip
+          pip install scoutsuite
+
+          echo "=== Confirm version & help ==="
+          scoutsuite --version
+          scoutsuite --help
+
+          echo "=== Minimal ScoutSuite debug done ==="
+
+  # --------------------------------------
+  # 2) FULL DEVSECOPS SECURITY PIPELINE
+  # --------------------------------------
   security:
     name: Run Security Scans
     runs-on: ubuntu-latest
@@ -11,63 +46,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 1) Use a pinned Python version so we have a consistent environment
+      # 1) Pin Python version
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      # 2) Run Semgrep (static code analysis)
+      # 2) Run Semgrep (Static Code Analysis)
       - name: Run Semgrep (Static Code Analysis)
         run: |
           pip install semgrep
           semgrep scan --config=auto
 
-      # 3) Run Trivy (dependency / SCA scan)
+      # 3) Run Trivy (Dependency Scan)
       - name: Run Trivy (Dependency Scan)
         run: |
-          # Download and install Trivy into ./bin
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ./bin
-          # Scan the current directory
           ./bin/trivy fs .
 
-      # 4) Run Checkov (Terraform security scan)
+      # 4) Run Checkov (Terraform Security Scan)
       - name: Run Checkov (Terraform Security Scan)
         run: |
-          # Make an infra folder in case none exists
           mkdir -p infra
-
-          # Pin packaging and jmespath as recommended to avoid conflicts
           pip install 'packaging>=23.0,<24.0' 'jmespath>=1.0.0,<2.0.0'
-          
-          # Now install Checkov
           pip install checkov==3.2.377
-          
-          # Scan the infra folder for Terraform issues
           checkov -d infra/
 
       # 5) Run Prowler (AWS Security Audit)
-      # We allow the pipeline to continue even if Prowler finds issues (exit code 3 or so).
+      #    We allow it to continue even if checks fail.
       - name: Run Prowler (AWS Security Audit)
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # Grab fresh Prowler
           rm -rf prowler-repo
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
-
-          # Debug logs
           echo "=== Debug: Prowler Repo Contents ==="
           ls -al
-
-          # Install Poetry & dependencies
           pip install poetry
           poetry install
-
-          # Run Prowler and produce JSON (OCSF) output
           poetry run python prowler.py -M json-ocsf -o prowler-report.json
 
       # 6) Run ScoutSuite (AWS Security Report)
@@ -76,24 +95,18 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # Create and activate a virtual environment for ScoutSuite
           python -m venv venv
           source venv/bin/activate
-
-          # Upgrade pip (recommended)
           pip install --upgrade pip
-
-          # Install ScoutSuite
           pip install scoutsuite
 
-          # (Optional) Debug: check it's on the PATH
           which scoutsuite
           scoutsuite --version
 
-          # Finally, run ScoutSuite
+          # Actual ScoutSuite AWS scan
           scoutsuite -p aws --report scoutsuite-report
 
-      # 7) Upload Prowler and ScoutSuite output as artifacts
+      # 7) Upload security reports (Prowler & ScoutSuite)
       - name: Upload Security Reports as Artifacts
         uses: actions/upload-artifact@v4
         with:
