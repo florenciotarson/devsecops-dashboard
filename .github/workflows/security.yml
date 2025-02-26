@@ -30,11 +30,12 @@ jobs:
           pip install scoutsuite
 
           echo "=== Confirm version & help ==="
-          # Use the full path to ensure the command is found in the venv
-          ./venv/bin/scoutsuite --version
-          ./venv/bin/scoutsuite --help
+          # Use Python module invocation (doesn't rely on a bin/scoutsuite file)
+          python -m scoutsuite --version
+          python -m scoutsuite --help
 
           echo "=== Minimal ScoutSuite debug done ==="
+
 
   # --------------------------------------
   # 2) FULL DEVSECOPS SECURITY PIPELINE
@@ -98,16 +99,17 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          # Create & activate a separate venv in this step
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install scoutsuite
 
           mkdir -p scoutsuite-report
-          # Use full path to run ScoutSuite in the venv
-          ./venv/bin/scoutsuite -p aws --report-dir scoutsuite-report
+          # Invoke ScoutSuite via Python module
+          python -m scoutsuite -p aws --report-dir scoutsuite-report
 
-      # 8) Upload Security Reports as Artifacts
+      # 8) Upload security reports
       - name: Upload Security Reports as Artifacts
         uses: actions/upload-artifact@v4
         with:
