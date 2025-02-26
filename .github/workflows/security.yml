@@ -24,17 +24,23 @@ jobs:
 
       - name: Run Trivy (Dependency Scan)
         run: |
+          # Install Trivy into ./bin
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ./bin
+          # Call Trivy explicitly from ./bin
           ./bin/trivy fs .
 
       - name: Run Checkov (Terraform Security Scan)
         run: |
+          # Ensure infra folder exists so Checkov doesn't complain
           mkdir -p infra
+          # Pin packaging and jmespath to satisfy checkov dependencies
           pip install 'packaging>=23.0,<24.0' 'jmespath>=1.0.0,<2.0.0'
+          # Now install Checkov
           pip install checkov==3.2.377
           checkov -d infra/
 
       - name: Run Prowler (AWS Security Audit)
+        # Allow pipeline to continue even if Prowler fails checks
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -54,7 +60,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # Create and activate a dedicated virtual environment
+          # Create and activate a dedicated virtual environment for ScoutSuite
           python -m venv venv
           source venv/bin/activate
 
@@ -64,7 +70,7 @@ jobs:
           # Install ScoutSuite
           pip install scoutsuite
 
-          # Verify scoutsuite is installed and in PATH
+          # Debug: Verify ScoutSuite is installed and in PATH
           which scoutsuite
           scoutsuite --version
 
