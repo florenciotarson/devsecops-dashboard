@@ -18,7 +18,7 @@ jobs:
 
       - name: Run Trivy (Dependency Scan)
         run: |
-          curl -fsSL https://aquasecurity.github.io/trivy/install.sh | sh
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
           trivy fs .
 
       - name: Run Checkov (Terraform Security Scan)
