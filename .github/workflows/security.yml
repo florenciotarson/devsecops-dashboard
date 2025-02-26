@@ -30,8 +30,9 @@ jobs:
           pip install scoutsuite
 
           echo "=== Confirm version & help ==="
-          scoutsuite --version
-          scoutsuite --help
+          # Use the full path to ensure the command is found in the venv
+          ./venv/bin/scoutsuite --version
+          ./venv/bin/scoutsuite --help
 
           echo "=== Minimal ScoutSuite debug done ==="
 
@@ -103,9 +104,10 @@ jobs:
           pip install scoutsuite
 
           mkdir -p scoutsuite-report
-          scoutsuite -p aws --report-dir scoutsuite-report
+          # Use full path to run ScoutSuite in the venv
+          ./venv/bin/scoutsuite -p aws --report-dir scoutsuite-report
 
-      # 8) Upload security reports
+      # 8) Upload Security Reports as Artifacts
       - name: Upload Security Reports as Artifacts
         uses: actions/upload-artifact@v4
         with:
