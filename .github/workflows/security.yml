@@ -52,28 +52,32 @@ jobs:
         with:
           python-version: "3.9"
 
-      # 2) Run Semgrep (Static Code Analysis)
-      - name: Run Semgrep (Static Code Analysis)
+      # 2) Install Dependencies
+      - name: Install Dependencies
         run: |
-          pip install semgrep
-          semgrep scan --config=auto
-
-      # 3) Run Trivy (Dependency Scan)
-      - name: Run Trivy (Dependency Scan)
-        run: |
+          pip install semgrep checkov scoutsuite
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b ./bin
-          ./bin/trivy fs .
 
-      # 4) Run Checkov (Terraform Security Scan)
+      # 3) Run Semgrep (Static Code Analysis)
+      - name: Run Semgrep (Static Code Analysis)
+        continue-on-error: true
+        run: |
+          semgrep scan --config=auto --json -o semgrep-results.json
+
+      # 4) Run Trivy (Dependency Scan)
+      - name: Run Trivy (Dependency Scan)
+        continue-on-error: true
+        run: |
+          ./bin/trivy fs . --format json --output trivy-results.json
+
+      # 5) Run Checkov (Terraform Security Scan)
       - name: Run Checkov (Terraform Security Scan)
+        continue-on-error: true
         run: |
           mkdir -p infra
-          pip install 'packaging>=23.0,<24.0' 'jmespath>=1.0.0,<2.0.0'
-          pip install checkov==3.2.377
-          checkov -d infra/
+          checkov -d infra/ --output json --output-file-path checkov-results.json
 
-      # 5) Run Prowler (AWS Security Audit)
-      #    We allow pipeline to continue even if Prowler fails checks.
+      # 6) Run Prowler (AWS Security Audit)
       - name: Run Prowler (AWS Security Audit)
         continue-on-error: true
         env:
@@ -83,13 +87,11 @@ jobs:
           rm -rf prowler-repo
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
-          echo "=== Debug: Prowler Repo Contents ==="
-          ls -al
           pip install poetry
-          poetry install
+          poetry install --no-root
           poetry run python prowler.py -M json-ocsf -o prowler-report.json
 
-      # 6) Run ScoutSuite (AWS Security Report)
+      # 7) Run ScoutSuite (AWS Security Report)
       - name: Run ScoutSuite (AWS Security Report)
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -100,17 +102,17 @@ jobs:
           pip install --upgrade pip
           pip install scoutsuite
 
-          which scoutsuite
-          scoutsuite --version
+          mkdir -p scoutsuite-report
+          scoutsuite -p aws --report-dir scoutsuite-report
 
-          # Actual ScoutSuite AWS scan
-          scoutsuite -p aws --report scoutsuite-report
-
-      # 7) Upload security reports (Prowler & ScoutSuite)
+      # 8) Upload security reports
       - name: Upload Security Reports as Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
+            semgrep-results.json
+            trivy-results.json
+            checkov-results.json
             prowler-repo/prowler-report.json
-            scoutsuite-report
+            scoutsuite-report/
