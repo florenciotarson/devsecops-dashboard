@@ -1,0 +1,16 @@
+# Ignore environment variables
+.env
+
+# Ignore dependencies
+node_modules/
+
+# Ignore logs
+npm-debug.log
+yarn-error.log
+
+# Ignore build files (if using Next.js or React)
+.next/
+dist/
+build/
+.vscode/
+
