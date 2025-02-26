@@ -40,15 +40,18 @@ jobs:
           # Clone fresh
           git clone https://github.com/prowler-cloud/prowler.git prowler-repo
           cd prowler-repo
-          
+
           echo "=== Debug: Prowler Repo Contents ==="
           ls -al
 
-          # Make prowler.py executable
-          chmod +x prowler.py
+          # Install Poetry
+          pip install poetry
 
-          # Run prowler.py via Python to generate prowler-report.json
-          python prowler.py -M json -o prowler-report.json
+          # Install all dependencies
+          poetry install
+
+          # Run prowler with Poetry
+          poetry run python prowler.py -M json -o prowler-report.json
 
       - name: Run ScoutSuite (AWS Security Report)
         env:
